@@ -54,6 +54,8 @@ if (!empty($token) && !empty($communication) and get_config('local_hub', 'hubena
                 $backup = $hub->backup_exits($courseid);
                 if (empty($backup)) {
                     $hub->add_backup($_FILES['file'], $courseid);
+                    //added event notification on upload of a new course Justin 20131014
+                    events_trigger('hub_course_received',$course);
                 }
                 break;
             case HUB_SCREENSHOT_FILE_TYPE:
