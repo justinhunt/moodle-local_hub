@@ -179,6 +179,7 @@ class course_search_form extends moodleform {
         $mform->addElement('select', 'downloadable', get_string('enroldownload', 'local_hub'), $options);
         $mform->addHelpButton('downloadable', 'enroldownload', 'local_hub');
         $mform->setDefault('downloadable', $downloadable);
+         $mform->setType('downloadable', PARAM_INT);
 
         //visible field
         //Note: doesn't matter if form html is hacked, index script does not return any invisible courses
@@ -191,6 +192,7 @@ class course_search_form extends moodleform {
             $mform->setDefault('visibility', $visibility);
             unset($options);
             $mform->addHelpButton('visibility', 'visibility', 'local_hub');
+            $mform->setType('visibility', PARAM_TEXT);
         }
 
         $options = array();
@@ -202,6 +204,7 @@ class course_search_form extends moodleform {
         $mform->setDefault('audience', $audience);
         unset($options);
         $mform->addHelpButton('audience', 'audience', 'local_hub');
+         $mform->setType('audience', PARAM_TEXT);
 
         if (key_exists('adminform', $this->_customdata)) {
             $options = array();
@@ -213,6 +216,7 @@ class course_search_form extends moodleform {
             $mform->setDefault('lastmodified', $lastmodified);
             unset($options);
             $mform->addHelpButton('lastmodified', 'lastmodified', 'local_hub');
+             $mform->setType('lastmodified', PARAM_TEXT);
         }
 
         $options = array();
@@ -228,6 +232,7 @@ class course_search_form extends moodleform {
         $mform->setDefault('educationallevel', $educationallevel);
         unset($options);
         $mform->addHelpButton('educationallevel', 'educationallevel', 'local_hub');
+		 $mform->setType('educationallevel', PARAM_TEXT);
 
         require_once($CFG->dirroot . "/course/publish/lib.php");
         $publicationmanager = new course_publish_manager();
@@ -247,6 +252,7 @@ class course_search_form extends moodleform {
         $mform->addHelpButton('subject', 'subject', 'local_hub');
         $this->init_javascript_enhancement('subject', 'smartselect',
                 array('selectablecategories' => true, 'mode' => 'compact'));
+        $mform->setType('subject', PARAM_TEXT);
 
         require_once($CFG->libdir . "/licenselib.php");
         $licensemanager = new license_manager();
@@ -260,6 +266,7 @@ class course_search_form extends moodleform {
         unset($options);
         $mform->addHelpButton('licence', 'licence', 'local_hub');
         $mform->setDefault('licence', $licence);
+        $mform->setType('license', PARAM_TEXT);
 
         //search for only language that exist in the course DB
         require_once($CFG->dirroot . "/local/hub/lib.php");
@@ -275,6 +282,7 @@ class course_search_form extends moodleform {
         $mform->addElement('select', 'language', get_string('language'), $languages);
         $mform->setDefault('language', $language);
         $mform->addHelpButton('language', 'language', 'local_hub');
+        $mform->setType('language', PARAM_TEXT);
 
         $mform->addElement('select', 'orderby', get_string('orderby', 'local_hub'),
                 array('newest' => get_string('orderbynewest', 'local_hub'),
@@ -305,12 +313,14 @@ class course_search_form extends moodleform {
                 $mform->addElement('select', 'siteid', get_string('site', 'local_hub'), $siteids);
                 $mform->setDefault('siteid', $siteid);
                 $mform->addHelpButton('siteid', 'site', 'local_hub');
+                $mform->setType('siteid', PARAM_TEXT);
             }
         }
 
         $mform->addElement('text', 'search', get_string('keywords', 'local_hub'));
         $mform->addHelpButton('search', 'keywords', 'local_hub');
         $mform->setDefault('search', $search);
+        $mform->setType('search', PARAM_TEXT);
 
         $mform->addElement('submit', 'submitbutton', get_string('search', 'local_hub'));
     }
@@ -352,6 +362,7 @@ class site_search_form extends moodleform {
         $mform->setDefault('trusted', $trusted);
         unset($options);
         $mform->addHelpButton('trusted', 'trusted', 'local_hub');
+        $mform->setType('trusted', PARAM_INT);
 
         $options = array();
         $options['all'] = get_string('any');
@@ -360,6 +371,7 @@ class site_search_form extends moodleform {
         $mform->setDefault('countrycode', $country);
         unset($options);
         $mform->addHelpButton('countrycode', 'country', 'local_hub');
+        $mform->setType('countrycode', PARAM_TEXT);
 
         $languages = get_string_manager()->get_list_of_languages();
         asort($languages, SORT_LOCALE_STRING);
@@ -367,10 +379,12 @@ class site_search_form extends moodleform {
         $mform->addElement('select', 'language', get_string('sitelang', 'local_hub'), $languages);
         $mform->setDefault('language', $language);
         $mform->addHelpButton('language', 'sitelang', 'local_hub');
+        $mform->setType('language', PARAM_TEXT);
 
         $mform->addElement('text', 'search', get_string('keywords', 'local_hub'));
         $mform->addHelpButton('search', 'sitekeywords', 'local_hub');
         $mform->setDefault('search', $search);
+        $mform->setType('search', PARAM_TEXT);
 
         $this->add_action_buttons(false, get_string('sitesearch', 'local_hub'));
     }
@@ -395,6 +409,7 @@ class send_message_form extends moodleform {
             $sentoptions['publisher'] = get_string('senttopublisher', 'local_hub', $this->_customdata['publishername']);
         }
         $mform->addElement('select', 'sentto', get_string('sendto', 'local_hub'), $sentoptions);
+        $mform->setType('sentto', PARAM_TEXT);
 
         $options = array('question' => get_string('msgtypequestion', 'local_hub'),
             'improvement' => get_string('msgtypeimprovement', 'local_hub'),
@@ -404,12 +419,14 @@ class send_message_form extends moodleform {
         $mform->setType('type', PARAM_ALPHA);
         $mform->addHelpButton('type', 'msgtype', 'local_hub');
         $mform->addRule('type', $strrequired, 'required', null, 'client');
+        $mform->setType('type', PARAM_TEXT);
 
         $mform->addElement('textarea', 'message', get_string('emailmessage', 'local_hub'),
                 array('rows' => 10, 'cols' => 60));
         $mform->setType('message', PARAM_TEXT);
         $mform->addHelpButton('message', 'emailmessage', 'local_hub');
         $mform->addRule('message', $strrequired, 'required', null, 'client');
+        $mform->setType('message', PARAM_RAW);
 
         $this->add_action_buttons(true, get_string('sendmessage', 'local_hub'));
     }

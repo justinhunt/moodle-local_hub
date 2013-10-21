@@ -77,6 +77,25 @@ define('HUBALLOWPUBLICSEARCH', 'public');
  */
 define('HUBALLOWGLOBALSEARCH', 'search');
 
+//// SEARCH FORM VISIBILITY
+
+/**
+ * Search form visibility: only logged in users
+ */
+define('FRONTPAGESEARCHPRIVATE', 0);
+
+/**
+ * Search form visibility: all users
+ */
+define('FRONTPAGESEARCHPUBLIC', 1);
+
+/**
+ * Search form visibility: no search form
+ */
+define('FRONTPAGESEARCHNONE', 2);
+
+
+
 
 
 //// Communication /////
@@ -961,7 +980,7 @@ class local_hub {
 
             //delete outcomes
             $this->update_course_outcomes($courseid, null);
-
+			
             add_to_log(SITEID, 'local_hub', 'course unregistration', '', $course->id);
         }
     }
@@ -1659,14 +1678,32 @@ class local_hub {
 
         //check if the front page search should not be displayed
         //=> hand over the home page to Moodle index.php
-        //Two cases possible:
-        //1- the hub is private and the users are not logged in
-        //2- the hub is set with no search form on the login page
+        //cases possible: front page search form is set to:
+        //public - show the search form to logged in and not logged in users
+        //			UNLESS the hub is also set to private.
+        //private- show the search form to logged in users only. (default)
+        //none - never show the search form.(special case for Hub plugins ext. ie MAJ hub)
+        //
+        
         $hubprivacy = get_config('local_hub', 'privacy');
-        $searchfornologin = get_config('local_hub', 'searchfornologin');
-        if (($hubprivacy == HUBPRIVATE or $searchfornologin === '0') and !isloggedin()) {
-            return true;
+        $searchform = get_config('local_hub', 'searchform');
+        switch($searchform){
+        	case FRONTPAGESEARCHPUBLIC:
+        					if($hubprivacy == HUBPRIVATE && !isloggedin()){
+        						return true;
+        					}
+        					break;
+        	case FRONTPAGESEARCHNONE:
+        					return true;
+        					break;
+        	case FRONTPAGESEARCHPRIVATE:
+        	default:
+        		if(!isloggedin()){
+        			return true;
+        		}
+        	
         }
+
 
         require_once($CFG->dirroot . "/local/hub/forms.php");
 

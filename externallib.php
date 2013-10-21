@@ -290,6 +290,10 @@ class local_hub_external extends external_api {
         }
 
         $transaction->allow_commit();
+        
+        //added event notification on removal of a course Justin 20131015
+        events_trigger('hub_courses_removed',$params['courseids']);
+        
         return true;
     }
 
@@ -421,6 +425,7 @@ class local_hub_external extends external_api {
         }
 
         $transaction->allow_commit();
+        
         return $courseids;
     }
 
@@ -620,6 +625,10 @@ class local_hub_external extends external_api {
             $courseinfo['rating']['scaleid'] = HUB_COURSE_RATING_SCALE;
 
             //get comments
+            
+            //added Justin 20131021 
+            $commentoptions = new stdClass();
+            
             $commentoptions->context = get_context_instance(CONTEXT_COURSE, SITEID);
             $commentoptions->area = 'local_hub';
             $commentoptions->itemid = $course->id;

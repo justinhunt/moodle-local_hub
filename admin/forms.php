@@ -44,9 +44,11 @@ class hub_search_stolen_secret extends moodleform {
 
         $mform->addElement('text', 'secret', get_string('secret', 'local_hub')
                 , array('class' => 'admintextfield'));
+        $mform->setType('secret', PARAM_RAW);
         $mform->addElement('static', '', get_string('or', 'local_hub'));
         $mform->addElement('text', 'sitename', get_string('sitename', 'local_hub')
                 , array('class' => 'admintextfield'));
+         $mform->setType('sitename', PARAM_TEXT);
 
         $this->add_action_buttons(false, get_string('search'));
     }
@@ -212,9 +214,16 @@ class hub_settings_form extends moodleform {
         }
 
         //front page search form is displayed
-        $searchfornologin = get_config('local_hub', 'searchfornologin');
-        if ($searchfornologin === false) {
-            $searchfornologin = 1;
+        //if we havent got a value check for legacy searchfornologin value
+        //failing that set to
+        $searchform = get_config('local_hub', 'searchform');
+        if($searchform===false){
+        	$searchfornologin = get_config('local_hub', 'searchfornologin');
+        	if ($searchfornologin === false) {
+           	 	$searchform = FRONTPAGESEARCHPUBLIC;
+        	}else{
+        		$searchform = $searchfornologin;
+        	}
         }
 
         //max course publication per site per day (default) value
@@ -265,29 +274,34 @@ class hub_settings_form extends moodleform {
         $mform->setDefault('name', $hubname);
         $mform->addRule('name', get_string('required'), 'required');
         $mform->addHelpButton('name', 'name', 'local_hub');
+        $mform->setType('name', PARAM_TEXT);
 
-        $privacyoptions = array(HUBPRIVATE => get_string('nosearch', 'local_hub'),
-            HUBALLOWPUBLICSEARCH => get_string('allowpublicsearch', 'local_hub'),
-            HUBALLOWGLOBALSEARCH => get_string('allowglobalsearch', 'local_hub'));
         $mform->addElement('checkbox', 'enabled',
                 get_string('enabled', 'local_hub'), '');
         $mform->setDefault('enabled', $enabled);
         $mform->addHelpButton('enabled', 'enabled', 'local_hub');
+        $mform->setType('enabled', PARAM_INT);
 
         $mform->addElement('checkbox', 'recaptchaenabled',
                 get_string('recaptchaenabled', 'local_hub'), '');
         $mform->setDefault('recaptchaenabled', $recaptcha);
         $mform->addHelpButton('recaptchaenabled', 'recaptchaenabled', 'local_hub');
+        $mform->setType('recaptchaenabled', PARAM_INT);
 
+		$privacyoptions = array(HUBPRIVATE => get_string('nosearch', 'local_hub'),
+            HUBALLOWPUBLICSEARCH => get_string('allowpublicsearch', 'local_hub'),
+            HUBALLOWGLOBALSEARCH => get_string('allowglobalsearch', 'local_hub'));
         $mform->addElement('select', 'privacy',
                 get_string('privacy', 'local_hub'), $privacyoptions);
         $mform->setDefault('privacy', $privacy);
         $mform->addHelpButton('privacy', 'privacy', 'local_hub');
+        $mform->setType('privacy', PARAM_TEXT);
 
         $mform->addElement('select', 'lang',
                 get_string('language', 'local_hub'), $languages);
         $mform->setDefault('lang', $hublanguage);
         $mform->addHelpButton('lang', 'hublang', 'local_hub');
+        $mform->setType('language', PARAM_TEXT);
 
         $mform->addElement('textarea', 'desc',
                 get_string('description', 'local_hub'),
@@ -297,12 +311,14 @@ class hub_settings_form extends moodleform {
         $mform->setType('desc', PARAM_TEXT);
         $mform->addHelpButton('desc', 'description', 'local_hub');
 
+
         $mform->addElement('text', 'contactname',
                 get_string('contactname', 'local_hub')
                 , array('class' => 'admintextfield'));
         $mform->setDefault('contactname', $contactname);
         $mform->addRule('contactname', get_string('required'), 'required');
         $mform->addHelpButton('contactname', 'contactname', 'local_hub');
+        $mform->setType('contactname', PARAM_TEXT);
 
         $mform->addElement('text', 'contactemail',
                 get_string('contactemail', 'local_hub')
@@ -310,6 +326,8 @@ class hub_settings_form extends moodleform {
         $mform->setDefault('contactemail', $contactemail);
         $mform->addRule('contactemail', get_string('required'), 'required');
         $mform->addHelpButton('contactemail', 'contactemail', 'local_hub');
+         $mform->setType('contactemail', PARAM_TEXT);
+        
 
         $this->update_hublogo();
 
@@ -327,6 +345,7 @@ class hub_settings_form extends moodleform {
         $mform->disabledIf('password', 'privacy', 'eq', HUBALLOWPUBLICSEARCH);
         $mform->disabledIf('password', 'privacy', 'eq', HUBALLOWGLOBALSEARCH);
         $mform->addHelpButton('password', 'hubpassword', 'local_hub');
+         $mform->setType('password', PARAM_RAW);
 
         $mform->addElement('text', 'maxwscourseresult',
                 get_string('maxwscourseresult', 'local_hub'));
@@ -334,6 +353,7 @@ class hub_settings_form extends moodleform {
                 'maxwscourseresult', 'local_hub');
         $mform->setAdvanced('maxwscourseresult');
         $mform->setDefault('maxwscourseresult', $hubmaxwscourseresult);
+         $mform->setType('maxwscourseresult', PARAM_TEXT);
 
         $mform->addElement('text', 'maxcoursesperday',
                 get_string('maxcoursesperday', 'local_hub'));
@@ -341,18 +361,36 @@ class hub_settings_form extends moodleform {
                 'maxcoursesperday', 'local_hub');
         $mform->setAdvanced('maxcoursesperday');
         $mform->setDefault('maxcoursesperday', $hubmaxpublication);
+    	 $mform->setType('maxcoursesperday', PARAM_TEXT);    
 
         $mform->addElement('checkbox', 'enablerssfeeds',
                 get_string('enablerssfeeds', 'local_hub'));
         $mform->addHelpButton('enablerssfeeds', 'enablerssfeeds', 'local_hub');
         $mform->setAdvanced('enablerssfeeds');
         $mform->setDefault('enablerssfeeds', $enablerssfeeds);
+        $mform->setType('enablerssfeeds', PARAM_INT);  
 
+
+		$searchformoptions = array(FRONTPAGESEARCHPRIVATE => get_string('searchformprivate', 'local_hub'),
+            FRONTPAGESEARCHPUBLIC => get_string('searchformpublic', 'local_hub'),
+            FRONTPAGESEARCHNONE => get_string('searchformnone', 'local_hub'));
+         $mform->addElement('select', 'searchform',
+                get_string('searchform', 'local_hub'), $searchformoptions);
+        $mform->setDefault('searchform', $searchform);
+        $mform->addHelpButton('searchform', 'searchform', 'local_hub');
+        $mform->setAdvanced('searchform');
+        $mform->setType('searchform', PARAM_INT);  
+        
+
+         
+          /*  
         $mform->addElement('checkbox', 'searchfornologin',
                 get_string('searchfornologin', 'local_hub'), '');
         $mform->setDefault('searchfornologin', $searchfornologin);
         $mform->addHelpButton('searchfornologin', 'searchfornologin', 'local_hub');
         $mform->setAdvanced('searchfornologin');
+        $mform->setType('searchfornologin', PARAM_INT);  
+        */
 
         $mform->addElement('text', 'rsssecret',
                 get_string('rsssecret', 'local_hub'));
@@ -360,8 +398,9 @@ class hub_settings_form extends moodleform {
                 'rsssecret', 'local_hub');
         $mform->setAdvanced('rsssecret');
         $mform->setDefault('rsssecret', $rsssecret);
+        $mform->setType('rsssecret', PARAM_RAW);  
 
-        $this->add_action_buttons(false, get_string('update'));
+        $this->add_action_buttons('rsssecret', get_string('update'));
     }
 
     /**
@@ -500,47 +539,55 @@ class hub_site_settings_form extends moodleform {
         $mform->addHelpButton('name',
                 'sitename', 'local_hub');
         $mform->setDefault('name', $site->name);
+        $mform->setType('name', PARAM_TEXT);
 
         $mform->addElement('text', 'url',
                 get_string('siteurl', 'local_hub'));
         $mform->addHelpButton('url',
                 'siteurl', 'local_hub');
         $mform->setDefault('url', $site->url);
+        $mform->setType('url', PARAM_TEXT);
 
         $mform->addElement('textarea', 'description',
                 get_string('sitedesc', 'local_hub'));
         $mform->addHelpButton('description',
                 'sitedesc', 'local_hub');
         $mform->setDefault('description', $site->description);
+        $mform->setType('description', PARAM_RAW);
 
         $mform->addElement('text', 'contactname',
                 get_string('siteadmin', 'local_hub'));
         $mform->addHelpButton('contactname',
                 'siteadmin', 'local_hub');
         $mform->setDefault('contactname', $site->contactname);
+        $mform->setType('contactname', PARAM_TEXT);
 
         $mform->addElement('text', 'contactemail',
                 get_string('siteadminemail', 'local_hub'));
         $mform->addHelpButton('contactemail',
                 'siteadminemail', 'local_hub');
         $mform->setDefault('contactemail', $site->contactemail);
+        $mform->setType('contactemail', PARAM_TEXT);
 
         $languages = get_string_manager()->get_list_of_languages();
         asort($languages, SORT_LOCALE_STRING);
         $mform->addElement('select', 'language', get_string('sitelanguage', 'local_hub'), $languages);
         $mform->setDefault('language', $site->language);
         $mform->addHelpButton('language', 'sitelanguage', 'local_hub');
+        $mform->setType('language', PARAM_TEXT);
 
         $countries = get_string_manager()->get_list_of_countries();
         $mform->addElement('select', 'countrycode', get_string('sitecountry', 'local_hub'), $countries);
         $mform->setDefault('countrycode', $site->countrycode);
         $mform->addHelpButton('countrycode', 'sitecountry', 'local_hub');
+        $mform->setType('countrycode', PARAM_TEXT);
 
         $mform->addElement('text', 'publicationmax',
                 get_string('publicationmax', 'local_hub'));
         $mform->addHelpButton('publicationmax',
                 'publicationmax', 'local_hub');
         $mform->setDefault('publicationmax', $site->publicationmax);
+        $mform->setType('publicationmax', PARAM_TEXT);
 
         $this->add_action_buttons(false, get_string('update'));
     }
@@ -586,6 +633,7 @@ class hub_course_settings_form extends moodleform {
         $mform->addElement('checkbox', 'visible', get_string('coursevisibility', 'local_hub'));
         $mform->addHelpButton('visible', 'coursevisibility', 'local_hub');
         $mform->setDefault('visible', $course->privacy);
+         $mform->setType('visible', PARAM_INT);
 
         $mform->addElement('text', 'fullname',
                 get_string('coursename', 'local_hub'),
@@ -594,6 +642,7 @@ class hub_course_settings_form extends moodleform {
                 'coursename', 'local_hub');
         $mform->setDefault('fullname', $course->fullname);
         $mform->addRule('fullname', $strrequired, 'required', null, 'client');
+         $mform->setType('fullname', PARAM_TEXT);
 
         if (!empty($course->courseurl)) {
             $mform->addElement('text', 'courseurl',
@@ -603,6 +652,7 @@ class hub_course_settings_form extends moodleform {
                     'courseurl', 'local_hub');
             $mform->setDefault('courseurl', $course->courseurl);
             $mform->addRule('courseurl', $strrequired, 'required', null, 'client');
+             $mform->setType('courseurl', PARAM_TEXT);
         } else {
             $mform->addElement('text', 'demourl',
                     get_string('demourl', 'local_hub'),
@@ -610,7 +660,9 @@ class hub_course_settings_form extends moodleform {
             $mform->addHelpButton('demourl',
                     'demourl', 'local_hub');
             $mform->setDefault('demourl', $course->demourl);
+            $mform->setType('demourl', PARAM_TEXT);
         }
+        
 
         $mform->addElement('textarea', 'description',
                 get_string('coursedesc', 'local_hub'),
@@ -619,18 +671,21 @@ class hub_course_settings_form extends moodleform {
                 'coursedesc', 'local_hub');
         $mform->addRule('description', $strrequired, 'required', null, 'client');
         $mform->setDefault('description', $course->description);
+        $mform->setType('description', PARAM_TEXT);
 
         $languages = get_string_manager()->get_list_of_languages();
         asort($languages, SORT_LOCALE_STRING);
         $mform->addElement('select', 'language', get_string('courselang', 'local_hub'), $languages);
         $mform->setDefault('language', $course->language);
         $mform->addHelpButton('language', 'courselang', 'local_hub');
+        $mform->setType('language', PARAM_TEXT);
 
         $mform->addElement('text', 'publishername', get_string('publishername', 'local_hub'),
                 array('class' => 'coursesettingstextfield'));
         $mform->setDefault('publishername', $course->publishername);
         $mform->addRule('publishername', $strrequired, 'required', null, 'client');
         $mform->addHelpButton('publishername', 'publishername', 'local_hub');
+        $mform->setType('publishername', PARAM_TEXT);
 
         $mform->addElement('text', 'publisheremail', get_string('publisheremail', 'local_hub'),
                 array('class' => 'coursesettingstextfield'));
@@ -644,17 +699,20 @@ class hub_course_settings_form extends moodleform {
         $mform->setType('creatorname', PARAM_TEXT);
         $mform->setDefault('creatorname', $course->creatorname);
         $mform->addHelpButton('creatorname', 'creatorname', 'local_hub');
+        $mform->setType('creatorname', PARAM_TEXT);
 
         $mform->addElement('text', 'contributornames', get_string('contributornames', 'local_hub'),
                 array('class' => 'coursesettingstextfield'));
         $mform->setDefault('contributornames', $course->contributornames);
         $mform->addHelpButton('contributornames', 'contributornames', 'local_hub');
+        $mform->setType('contributornames', PARAM_TEXT);
 
         $mform->addElement('text', 'coverage', get_string('tags', 'local_hub'),
                 array('class' => 'coursesettingstextfield'));
         $mform->setType('coverage', PARAM_TEXT);
         $mform->setDefault('coverage', $course->coverage);
         $mform->addHelpButton('coverage', 'tags', 'local_hub');
+        $mform->setType('coverage', PARAM_TEXT);
 
         require_once($CFG->libdir . "/licenselib.php");
         $licensemanager = new license_manager();
@@ -667,6 +725,7 @@ class hub_course_settings_form extends moodleform {
         $mform->setDefault('licence', $course->licenceshortname);
         unset($options);
         $mform->addHelpButton('licence', 'licence', 'local_hub');
+        $mform->setType('licence', PARAM_TEXT);
         require_once($CFG->dirroot . "/course/publish/lib.php");
         $publicationmanager = new course_publish_manager();
         $options = $publicationmanager->get_sorted_subjects();
@@ -686,6 +745,7 @@ class hub_course_settings_form extends moodleform {
         unset($options);
         $mform->addHelpButton('subject', 'subject', 'local_hub');
         $mform->setDefault('subject', $course->subject);
+        $mform->setType('subject', PARAM_TEXT);
         $mform->addRule('subject', $strrequired, 'required', null, 'client');
         $this->init_javascript_enhancement('subject', 'smartselect',
                 array('selectablecategories' => false, 'mode' => 'compact'));
@@ -698,6 +758,7 @@ class hub_course_settings_form extends moodleform {
         $mform->setDefault('audience', $course->audience);
         unset($options);
         $mform->addHelpButton('audience', 'audience', 'local_hub');
+        $mform->setType('audience', PARAM_TEXT);
 
         $options = array();
         $options[HUB_EDULEVEL_PRIMARY] = get_string('edulevelprimary', 'local_hub');
@@ -711,6 +772,7 @@ class hub_course_settings_form extends moodleform {
         $mform->setDefault('educationallevel', $course->educationallevel);
         unset($options);
         $mform->addHelpButton('educationallevel', 'educationallevel', 'local_hub');
+        $mform->setType('educationallevel', PARAM_TEXT);
 
 
         //setdefault is currently not supported making this required field not usable MDL-20988
@@ -741,6 +803,7 @@ class hub_course_settings_form extends moodleform {
                     get_string('keepscreenshot', 'local_hub'), $coursescreenshot);
             $mform->addHelpButton('screenshot_' . $screenshotnumber, 'keepscreenshot', 'local_hub');
             $mform->setDefault('screenshot_' . $screenshotnumber, 1);
+            $mform->setType('screenshot_' . $screenshotnumber, PARAM_INT);
         }
 
         $mform->addElement('filemanager', 'addscreenshots', get_string('addscreenshots', 'local_hub'), null,
