@@ -1655,6 +1655,10 @@ class local_hub {
         curl_setopt($ch, CURLOPT_NOBODY,         true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT,        15);
+        //without these two lines, CURL may not be able to access SSL sites
+        //not strictly secure, but since just verifying URL, probably ok. JH
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         $r = curl_exec($ch);
         $curlinfo = curl_getinfo($ch);
         //Note: if not reach, then $siteheaders contains an array with one empty element
