@@ -317,7 +317,9 @@ class local_hub {
                         array('id' => $id));
         $course->deleted = 1;
         $course->timemodified = time();
-        return $DB->update_record('hub_course_directory', $course);
+        if($DB->update_record('hub_course_directory', $course)){
+			  events_trigger('hub_course_deleted',$id); 
+		}
     }
 
     /**
