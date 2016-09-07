@@ -22,3 +22,4 @@ $plugin->version  = 2014073000;   // The (date) version of this module + 2 extra
                                   // display this version number with userdate (dev friendly)
 $plugin->requires = 2011120503;  // Requires this Moodle version - at least 2.2.3  (Build: 20120514)
 $plugin->cron     = 0;
+$plugin->component = 'local_hub';
