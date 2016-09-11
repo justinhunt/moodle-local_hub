@@ -57,3 +57,12 @@ $ADMIN->add('local_hub', new admin_externalpage('hubcoursesettings', get_string(
 $ADMIN->add('local_hub', new admin_externalpage('hubstolensecret', get_string('stolensecret', 'local_hub'),
         $CFG->wwwroot."/local/hub/admin/stolensecret.php",
         'moodle/site:config'));
+
+$ADMIN->add('local_hub', new admin_externalpage('checksiteconnectivity', get_string('checksiteconnectivity', 'local_hub'),
+    "/local/hub/admin/checksiteconnectivity.php",
+    'moodle/site:config'));
+
+$ADMIN->add('local_hub', new admin_externalpage('checkemailsendystatus', get_string('checkemailsendystatus', 'local_hub'),
+    "/local/hub/admin/checksendystatus.php",
+    'moodle/site:config'));
+

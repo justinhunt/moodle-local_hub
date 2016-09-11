@@ -275,7 +275,9 @@ class course_search_form extends moodleform {
         $alllanguages = get_string_manager()->get_list_of_languages();
         $languages = array();
         foreach ($courseslanguages as $languagecode => $lang) {
-            $languages[$languagecode] = $alllanguages[$languagecode];
+            if (isset($alllanguages[$languagecode])) {
+                $languages[$languagecode] = $alllanguages[$languagecode];
+            }
         }
         asort($languages, SORT_LOCALE_STRING);
         $languages = array_merge(array('all' => get_string('any')), $languages);
@@ -318,6 +320,7 @@ class course_search_form extends moodleform {
         }
 
         $mform->addElement('text', 'search', get_string('keywords', 'local_hub'));
+        $mform->setType('search', PARAM_ALPHANUMEXT);
         $mform->addHelpButton('search', 'keywords', 'local_hub');
         $mform->setDefault('search', $search);
         $mform->setType('search', PARAM_TEXT);
@@ -382,6 +385,7 @@ class site_search_form extends moodleform {
         $mform->setType('language', PARAM_TEXT);
 
         $mform->addElement('text', 'search', get_string('keywords', 'local_hub'));
+        $mform->setType('search', PARAM_TEXT);
         $mform->addHelpButton('search', 'sitekeywords', 'local_hub');
         $mform->setDefault('search', $search);
         $mform->setType('search', PARAM_TEXT);

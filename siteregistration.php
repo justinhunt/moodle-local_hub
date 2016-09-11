@@ -41,7 +41,7 @@ if (!get_config('local_hub', 'hubenabled')) {
     throw new moodle_exception('hubnotenabled');
 }
 
-$PAGE->set_context(get_system_context());
+$PAGE->set_context(context_system::instance());
 $PAGE->set_url('/local/hub/siteregistration.php');
 $PAGE->set_title(get_string('siteregistration', 'local_hub'));
 $PAGE->set_heading(get_string('siteregistration', 'local_hub'));
@@ -187,9 +187,13 @@ if (!empty($freshmoodletoken) and !empty($freshmoodleid)) {
     exit();
 }
 
-//check if the remote site is available
+// Check if the remote site is available.
 if (!$hub->is_remote_site_valid($url)) {
-    throw new moodle_exception('cannotregisternotavailablesite', 'local_hub', $url);
+    $port = parse_url($url, PHP_URL_PORT);
+    if (!empty($port) && $port != 80 && $port != 443) {
+        throw new moodle_exception('cannotregisterbadport', 'local_hub', $url, $url);
+    }
+    throw new moodle_exception('cannotregisternotavailablesite', 'local_hub', $url, $url);
 }
 
 //check if the registration password is correct
@@ -289,17 +293,18 @@ if ($secretexists and !$urlexists) { //the site has been moved or the site has b
     }
 
     //alert existing "secret" site administrator
-    $contactuser = new stdClass();
-    $contactuser->email = $sitewithsameurl->contactemail;
-    $contactuser->firstname = $sitewithsameurl->contactname;
-    $contactuser->lastname = '';
-    $contactuser->maildisplay = true;
+    require_once($CFG->dirroot.'/local/hub/locallib.php');
+    $contactuser = local_hub_create_contact_user($sitewithsameurl->contactemail,
+                                                 $sitewithsameurl->contactname);
+
     $emailinfo = new stdClass();
     $emailinfo->existingsite = $sitewithsameurl->name;
     $emailinfo->hubname = get_config('local_hub', 'name');
+
     $freshregistrationurl = new moodle_url('/local/hub/siteregistration.php',
             array('freshmoodletoken' => $freshmoodletoken, 'id' => $sitewithsameurl->id));
     $emailinfo->deletesiteregistration = $freshregistrationurl->out(false);
+
     $emailinfo->url = $sitewithsameurl->url;
     email_to_user($contactuser, get_admin(),
             get_string('emailtitleurlalreadyexists', 'local_hub', $emailinfo),

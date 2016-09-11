@@ -22,6 +22,7 @@
  * @author    Jerome Mouneyrac
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 define('HUB_COURSE_PER_PAGE', 10);
 
 //NEVER change this value after installation, otherwise you will need to change all rating in the DB
@@ -219,6 +220,7 @@ class local_hub {
         global $DB;
         $site->timemodified = time();
         $DB->update_record('hub_site_directory', $site);
+        update_sendy_list($site);
     }
 
     /**
@@ -227,19 +229,22 @@ class local_hub {
      * @return object site
      * @throws dml_exception if error
      */
-    public function add_site($site) {
+    public function add_site($site, $usegivenregtime=false) {
         global $DB;
-        $site->timeregistered = time();
+        if (!$usegivenregtime) {
+            $site->timeregistered = time();
+        }
         $site->timemodified = time();
 
-        //check if a deleted site exist
-        $deletedsite = $this->get_site_by_url($site->url, true);
+        // Check if site already exists.
+        $oldsite = $this->get_site_by_url($site->url, null);
         $site->deleted = 0;
-        if (!empty($deletedsite)) {
-            $site->id = $deletedsite->id;
+        if (!empty($oldsite)) {
+            $site->id = $oldsite->id;
             $this->update_site($site);
         } else {
             $site->id = $DB->insert_record('hub_site_directory', $site);
+            update_sendy_list($site);
         }
         return $site;
     }
@@ -607,6 +612,7 @@ class local_hub {
      *              onlyvisible - boolean - return only visible sites, otherwise all sites
      *              search - string - search terms (on name and description)
      *              language - string - return sites of this language
+     *              contactemail - string - returns sites associated with this email address
      *              urls - array of strings - return sites for these urls
      *              visible - boolean -  return visible or not visible sites
      *              trusted - boolean - return trusted or not trusted sites
@@ -635,9 +641,11 @@ class local_hub {
                 $wheresql .= " AND";
             }
             $wheresql .= " (" . $DB->sql_like('name', ':namesearch', false)
-                    . " OR " . $DB->sql_like('description', ':descsearch', false) . " )";
+                    . " OR " . $DB->sql_like('description', ':descsearch', false) . " "
+                    . " OR " . $DB->sql_like('url', ':urlsearch', false) . " )";
             $sqlparams['namesearch'] = '%' . $options['search'] . '%';
             $sqlparams['descsearch'] = '%' . $options['search'] . '%';
+            $sqlparams['urlsearch'] = '%' . $options['search'] . '%';
         }
 
         if (key_exists('language', $options) and !empty($options['language'])) {
@@ -646,6 +654,14 @@ class local_hub {
             }
             $wheresql .= " language = :language";
             $sqlparams['language'] = $options['language'];
+        }
+
+        if (key_exists('contactemail', $options) and !empty($options['contactemail'])) {
+            if (!empty($wheresql)) {
+                $wheresql .= " AND";
+            }
+            $wheresql .= " contactemail = :contactemail";
+            $sqlparams['contactemail'] = $options['contactemail'];
         }
 
         if (key_exists('urls', $options) and !empty($options['urls'])) {
@@ -731,12 +747,25 @@ class local_hub {
     /**
      * Return a site for a given url
      * @param string $url
-     * @param int $deleted
+     * @param int $deleted 0 for not deleted, 1 for deleted, null for either
      * @return object site , false if null
      */
     public function get_site_by_url($url, $deleted = 0) {
         global $DB;
-        return $DB->get_record('hub_site_directory', array('url' => $url, 'deleted' => $deleted));
+        $params = array('url' => $url);
+        if ($deleted !== null) {
+            $params['deleted'] = $deleted;
+        }
+        return $DB->get_record('hub_site_directory', $params);
+    }
+
+    /**
+     * Return number of visible registered sites
+     * @return integer
+     */
+    public function get_sitesregister($fromid=0, $numrecs=50, $modifiedafter=0) {
+        global $DB;
+        return $DB->get_records_select('hub_site_directory', 'id > :id AND (timemodified > :timemod OR timelinkchecked > :timelinkcheck)', array('id' => $fromid, 'timemod' => $modifiedafter, 'timelinkcheck' => $modifiedafter), '', '*', 0, $numrecs);
     }
 
     /**
@@ -1086,8 +1115,9 @@ class local_hub {
 
     /**
      * Register the site (creation / update)
-     * @param object $siteinfo
+     * @param object $siteinfo Array
      * @param boolean $siteurltoupdate
+     * @return string token
      */
     public function register_site($siteinfo, $siteurltoupdate='') {
         global $CFG;
@@ -1105,8 +1135,8 @@ class local_hub {
         //if we create or update a site, it can not be deleted
         $siteinfo->deleted = 0;
 
-        //if update, check if the url changed, if yes it could be a potential hack attempt
-        //=> make the site not visible and alert the administrator
+        // If update, check if the url changed, if yes it could be a potential hack attempt.
+        // Make the site not visible and alert the hub administrator.
         if (!empty($siteurltoupdate)) {
 
             //retrieve current hub info
@@ -1140,13 +1170,8 @@ class local_hub {
                 //make the site not visible (hub admin need to reconfirm it)
                 $siteinfo->visible = 0;
 
-                //alert the administrator
-                $contactuser = new object;
-                $contactuser->email = $siteinfo->contactemail ? $siteinfo->contactemail : $CFG->noreplyaddress;
-                $contactuser->firstname = $siteinfo->contactname ? $siteinfo->contactname : get_string('noreplyname');
-                $contactuser->lastname = '';
-                $contactuser->maildisplay = true;
-                email_to_user(get_admin(), $contactuser,
+                // Alert the hub administrator.
+                email_to_user(get_admin(), core_user::get_support_user(),
                         get_string('emailtitlesiteurlchanged', 'local_hub', $emailinfo->name),
                         get_string('emailmessagesiteurlchanged', 'local_hub', $emailinfo));
             }
@@ -1228,31 +1253,28 @@ class local_hub {
             $sitetohubcommunication->id = $this->add_communication($sitetohubcommunication);
         }
 
-        //send email to the Moodle administrator
-        $contactuser = new object;
-        $contactuser->email = $siteinfo->contactemail ? $siteinfo->contactemail : $CFG->noreplyaddress;
-        $contactuser->firstname = $siteinfo->contactname ? $siteinfo->contactname : get_string('noreplyname');
-        $contactuser->lastname = '';
-        $contactuser->maildisplay = true;
-        if (empty($emailinfo)) {
-            $emailinfo = new stdClass();
-            $emailinfo->name = $siteinfo->name;
-            $emailinfo->url = $siteinfo->url;
-            $emailinfo->contactname = $siteinfo->contactname;
-            $emailinfo->contactemail = $siteinfo->contactemail;
-            $emailinfo->huburl = $CFG->wwwroot;
-            $emailinfo->managesiteurl = $CFG->wwwroot . '/local/hub/admin/managesites.php';
-            $languages = get_string_manager()->get_list_of_languages();
-            $emailinfo->language = $languages[$siteinfo->language];
-        }
-
         //log the operation
         if (!empty($siteurltoupdate)) {
             //we just log, do not send an email to admin for update
             //(an email was sent previously if the url or name changed)
             add_to_log(SITEID, 'local_hub', 'site update', '', $siteinfo->id);
         } else {
-            email_to_user(get_admin(), $contactuser,
+            // Send email to the hub administrator.
+
+            if (empty($emailinfo)) {
+                $emailinfo = new stdClass();
+                $emailinfo->name = $siteinfo->name;
+                $emailinfo->url = $siteinfo->url;
+                $emailinfo->contactname = $siteinfo->contactname;
+                $emailinfo->contactemail = $siteinfo->contactemail;
+                $emailinfo->huburl = $CFG->wwwroot;
+                $emailinfo->managesiteurl = $CFG->wwwroot . '/local/hub/admin/managesites.php';
+
+                $languages = get_string_manager()->get_list_of_languages();
+                $emailinfo->language = $languages[$siteinfo->language];
+            }
+
+            email_to_user(get_admin(), core_user::get_support_user(),
                     get_string('emailtitlesiteadded', 'local_hub', $emailinfo->name),
                     get_string('emailmessagesiteadded', 'local_hub', $emailinfo));
             add_to_log(SITEID, 'local_hub', 'site registration', '', $site->id);
@@ -1298,6 +1320,7 @@ class local_hub {
 
     function delete_site($id, $unregistercourses = false) {
         global $CFG;
+        require_once($CFG->dirroot.'/local/hub/locallib.php');
 
         $sitetodelete = $this->get_site($id);
 
@@ -1320,14 +1343,10 @@ class local_hub {
             $this->delete_communication($sitetohubcommunication);
         }
 
-        //send email to the site administrator
-        $contactuser = new object;
-        $contactuser->email = $sitetodelete->contactemail ?
-                $sitetodelete->contactemail : $CFG->noreplyaddress;
-        $contactuser->firstname = $sitetodelete->contactname ?
-                $sitetodelete->contactname : get_string('noreplyname');
-        $contactuser->lastname = '';
-        $contactuser->maildisplay = true;
+        // Send email to the site administrator.
+        $contactuser = local_hub_create_contact_user($sitetodelete->contactemail ? $sitetodelete->contactemail : $CFG->noreplyaddress,
+                                                     $sitetodelete->contactname ? $sitetodelete->contactname : get_string('noreplyname'));
+
         $emailinfo = new stdClass();
         $hubinfo = $this->get_info();
         $emailinfo->hubname = $hubinfo['name'];
@@ -1337,6 +1356,7 @@ class local_hub {
         $emailinfo->unregisterpagelink = $sitetodelete->url .
                 '/admin/registration/index.php?huburl=' .
                 $hubinfo['url'] . '&force=1&unregistration=1';
+
         email_to_user($contactuser, get_admin(),
                 get_string('emailtitlesitedeleted', 'local_hub', $emailinfo),
                 get_string('emailmessagesitedeleted', 'local_hub', $emailinfo));
@@ -1386,32 +1406,36 @@ class local_hub {
             $roleid = $role->id;
         }
 
-        //check and create a user
-        $user = $DB->get_record('user', array('username' => $username,
-                    'idnumber' => $username));
+        // Get the user account representing the registered site.
+        $user = $DB->get_record('user', ['username' => core_text::strtolower($username), 'idnumber' => $username]);
+
         if (empty($user)) {
             $user = new stdClass();
-            $user->username = $username;
+            $user->username = core_text::strtolower($username);
+            $user->email = sha1($user->username).'@example.com';
             $user->firstname = $username;
             $user->lastname = get_string('donotdeleteormodify', 'local_hub');
             $user->password = ''; //login no authorised with webservice authentication
             $user->auth = 'webservice';
             $user->confirmed = 1; //need to be confirmed otherwise got deleted
             $user->idnumber = $username;
-            $user->mnethostid = 1;
+            $user->mnethostid = $CFG->mnet_localhost_id;
             $user->description = get_string('hubwsuserdescription', 'local_hub');
-            $user->timecreated = time();
-            $user->timemodified = $user->timecreated;
+
+            // Add extra fields to prevent a debug notice.
+            $userfields = get_all_user_name_fields();
+            foreach ($userfields as $key => $field) {
+                if (!isset($user->$key)) {
+                    $user->$key = null;
+                }
+            }
 
             // Insert the "site" user into the database.
-            $user->id = $DB->insert_record('user', $user);
-            events_trigger('user_created', $user);
-            add_to_log(SITEID, 'user', get_string('create'), '/view.php?id='.$user->id,
-                fullname($user));
+            $user->id = user_create_user($user, false, true);
         }
 
         //check and assign the role to user
-        $context = get_context_instance(CONTEXT_SYSTEM);
+        $context = context_system::instance();
         $existingroleassign = $DB->get_records('role_assignments', array('roleid'=>$roleid,
             'contextid'=>$context->id, 'userid'=>$user->id), 'id');
         if (empty($existingroleassign)) {
@@ -1477,7 +1501,9 @@ class local_hub {
             $tokenid = $DB->insert_record('external_tokens', $resulttoken);
             $resulttoken->id = $tokenid;
         } else {
-            throw new moodle_exception('hiddentokenalreadyexist');
+            //throw new moodle_exception('hiddentokenalreadyexist');
+            // Just return the found token instead of throwing an error.
+            $resulttoken = $token;
         }
 
         return $resulttoken;
@@ -1636,7 +1662,7 @@ class local_hub {
     /**
      * Check if the remote site is valid (not localhost and available by the hub)
      * Note: it doesn't matter if the site returns a 404 error.
-     * The point here is to check if the site exists. It doesn not matter if the hub can not call the site,
+     * The point here is to check if the site exists. It does not matter if the hub can not call the site,
      * as by security design, a hub should never call a site.
      * However an admin user registering his site should be able to access the site,
      * as people searching on the hub.
@@ -1648,6 +1674,7 @@ class local_hub {
      * @return boolean true if the site is valid
      */
     public function is_remote_site_valid($url) {
+<<<<<<< HEAD
 
         //Retrieve some of the site header info by curl
         //Curl is twice faster and more than the get_headers() php function
@@ -1664,14 +1691,38 @@ class local_hub {
         $r = curl_exec($ch);
         $curlinfo = curl_getinfo($ch);
         //Note: if not reach, then $siteheaders contains an array with one empty element
+=======
+        global $CFG;
+        require_once($CFG->libdir.'/filelib.php');
+>>>>>>> 242c4ac7b94ec191f33936ef34cb485765a00117
 
         //Check if site is valid
         if ( strpos($url, 'http://localhost') !== false
-                or strpos($url, 'http://127.0.0.1') !== false
-                or empty($curlinfo['header_size'])) {
+                or strpos($url, 'http://127.0.0.1') !== false ) {
             return false;
         }
-        return true;
+
+        $curl = new curl();
+        $curl->setopt(array('CURLOPT_FOLLOWLOCATION' => true, 'CURLOPT_MAXREDIRS' => 3, 'CURLOPT_SSL_VERIFYPEER' => 0, 'CURLOPT_SSL_VERIFYHOST' => 0));
+        $curl->head($url);
+        $info = $curl->get_info();
+
+        // Return true if return code is OK (200) or redirection (302).
+        // Redirection occurs for many reasons including redirection to another site that handles single sign-on.
+        if ($info['http_code'] === 200 || $info['http_code'] === 302) {
+            return true;
+        }
+
+        // Some sites respond to head() with a 503.
+        // As a fallback try get().
+        // We don't just always do get() as it is much slower than head().
+        $curl->get($url);
+        $info = $curl->get_info();
+        if ($info['http_code'] === 200 || $info['http_code'] === 302) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -1876,7 +1927,7 @@ class local_hub {
             //load ratings and comments
             require_once($CFG->dirroot . '/rating/lib.php');
             $ratingoptions = new stdclass();
-            $ratingoptions->context = get_context_instance(CONTEXT_COURSE, SITEID); //front page course
+            $ratingoptions->context = context_course::instance(SITEID); //front page course
             $ratingoptions->items = $courses;
             $ratingoptions->aggregate = RATING_AGGREGATE_COUNT; //the aggregation method
             $ratingoptions->scaleid = 0 - get_config('local_hub', 'courseratingscaleid'); //rating API is expecting "minus scaleid"
@@ -1894,7 +1945,8 @@ class local_hub {
 
             require_once($CFG->dirroot . '/comment/lib.php');
             foreach ($courses as $course) {
-                $commentoptions->context = get_context_instance(CONTEXT_COURSE, SITEID);
+                $commentoptions = new stdClass();
+                $commentoptions->context = context_course::instance(SITEID);
                 $commentoptions->area = 'local_hub';
                 $commentoptions->itemid = $course->id;
                 $commentoptions->showcount = true;
@@ -1923,15 +1975,15 @@ class local_hub {
             $search = empty($search) ? 0 : urlencode($search);
             //retrieve guest user if user not logged in
             $userid = empty($USER->id) ? $CFG->siteguest : $USER->id;
-
+            $ctx = context_course::instance(SITEID);
             //add the link tage to the header
-            $rsslink = rss_get_url(get_context_instance(CONTEXT_COURSE, SITEID)->id, $userid, 'local_hub',
+            $rsslink = rss_get_url($ctx->id, $userid, 'local_hub',
                             $downloadable . '/' . $audience . '/' . $educationallevel
                             . '/' . $subject . '/' . $licence
                             . '/' . $language . '/' . $search . '/');
             $PAGE->add_alternate_version('RSS', $rsslink, 'application/rss+xml');
             //create the rss icon
-            $rssicon = rss_get_link(get_context_instance(CONTEXT_COURSE, SITEID)->id, $userid, 'local_hub',
+            $rssicon = rss_get_link($ctx->id, $userid, 'local_hub',
                             $downloadable . '/' . $audience . '/' . $educationallevel
                             . '/' . $subject . '/' . $licence
                             . '/' . $language . '/' . $search . '/' . $orderby . '/',
@@ -2082,7 +2134,7 @@ function local_hub_rating_validate($params) {
         throw new rating_exception('invalidratingitemid');
     }
     //validate context id
-    if (get_context_instance(CONTEXT_COURSE, SITEID)->id != $params['context']->id) {
+    if (context_course::instance(SITEID)->id != $params['context']->id) {
         throw new rating_exception('invalidcontext');
     }
 
@@ -2113,8 +2165,150 @@ function local_hub_comment_validate($comment_param) {
         throw new comment_exception('invalidcommentitemid');
     }
     //validate context id
-    if (get_context_instance(CONTEXT_COURSE, SITEID)->id != $comment_param->context->id) {
+    if (context_course::instance(SITEID)->id != $comment_param->context->id) {
         throw new comment_exception('invalidcontext');
     }
     return true;
+}
+
+/**
+ * Optionally subscribe/unsubscribe the contactemail to/from a sendy mailing list.
+ * Loads all sites associated with the supplied site contactemail and passes them to update_sendy_list_batch().
+ * This is necessary because the emailalert property may be different on the various sites associated with a given email.
+ * We can't subscribe or unsubscribe them based on a single site's value.
+ *
+ * @todo tobe in local_hub class or not? its a helper function for now for any functional expansion..
+ *
+ * @param $site a row from hub_site_directory
+ */
+function update_sendy_list($site) {
+    $hub = new local_hub();
+    $sites = $hub->get_sites(array('contactemail' => $site->contactemail));
+    update_sendy_list_batch($sites);
+}
+
+/**
+ * Send, en masse, updates to the sendy list via REST. Really, the list is managed at and by sendy.
+ *
+ * An email address will be subscribed if at least one site is associated with it with emailalert and contactable both set to 1.
+ * If all sites for an email address have emailalert or contactable == 0 the email address will be unsubscribed.
+ *
+ * @todo tobe in local_hub class or not? its a helper function for now for any functional expansion..
+ *
+ * @param array $sites Sites to subscribe/unsubscribe to Sendy
+ * @param int $chunksize
+ */
+function update_sendy_list_batch($sites, $chunksize=150) {
+    global $CFG;
+    require_once($CFG->dirroot.'/local/hub/curl.php');
+
+    if (PHPUNIT_TEST) {
+        // Don't update Sendy if we are running tests.
+        return;
+    }
+
+    $sendyurl = get_config('local_hub', 'sendyurl');
+    $sendylistid = get_config('local_hub', 'sendylistid');
+    $sendyapikey = get_config('local_hub', 'sendyapikey');
+
+    // Check for config.php overrides.
+    if (isset($CFG->sendyurl)) {
+         $sendyurl = $CFG->sendyurl;
+    }
+    if (isset($CFG->sendylistid)) {
+         $sendylistid = $CFG->sendylistid;
+    }
+    if (isset($CFG->sendyapikey)) {
+         $sendyapikey = $CFG->sendyapikey;
+    }
+
+    if (empty($sendyurl) || empty($sendylistid) || empty($sendyapikey)) {
+        print_error('mailinglistnotconfigured', 'local_hub');
+    }
+
+    $subscribers = array();
+    $unsubscribers = array();
+    foreach ($sites as $site) {
+        if (empty($site->contactemail)) {
+            continue;
+        }
+        if ($site->emailalert == 1 && $site->deleted == 0) {
+            // Only subscribe if user asked to be subscribed and site isn't deleted.
+            $subscribers[$site->contactemail] = $site;
+            unset($unsubscribers[$site->contactemail]);
+        } else if ($site->emailalert == 0) {
+            // Only unsubscribe if the user specifically asked to be unsubscribed.
+            // Otherwise, leave their subscription alone.
+            if (!isset($subscribers[$site->contactemail])) {
+                $unsubscribers[$site->contactemail] = $site;
+            }
+        }
+    }
+
+    // Loop through $subscribers.
+    // For each subscriber, check their subscription status.
+    // If the email address is not known to the list server, subscribe them.
+    debugging('Subscribing '. count($subscribers). ' users in chunks of '. $chunksize, DEBUG_DEVELOPER);
+    $chunks = array_chunk($subscribers, $chunksize);
+    $resturl = '/subscribe';
+    process_sendy_chunks($chunks, $sendyurl, $resturl, $sendylistid, $sendyapikey, array('1', 'true', 'Already subscribed.'));
+
+    // Loop through $unsubscribers and unsubscribe them.
+    // The state on list server doesn't matter, just unsubscribe.
+    debugging('Unsubscribing '. count($unsubscribers). ' users in chunks of '. $chunksize, DEBUG_DEVELOPER);
+    $chunks = array_chunk($unsubscribers, $chunksize);
+    $resturl = '/unsubscribe';
+    process_sendy_chunks($chunks, $sendyurl, $resturl, $sendylistid, $sendyapikey, array('1', 'true'));
+}
+
+function process_sendy_chunks($chunks, $sendyurl, $resturl, $sendylistid, $sendyapikey, $correctresults) {
+    foreach ($chunks as $chunk) {
+        $curl = new curly;
+        $requests = array();
+        foreach ($chunk as $site) {
+            if ($resturl == '/subscribe') {
+                // Need to check the email address' status before subscribing.
+                $emailstatus = get_sendy_status($sendyurl, $sendyapikey, $sendylistid, trim($site->contactemail));
+                if ($emailstatus != 'Email does not exist in list') {
+                    // They are either already subscribed or have been previously subscribed but unsubscribed so leave them alone.
+                    debugging('Updating sendy @'.$sendyurl.$resturl.' for list '. $sendylistid .' skipped site id->'. $site->id .' email->'.$site->contactemail.' as the email status is:'.$emailstatus, DEBUG_DEVELOPER);
+                    continue;
+                }
+            }
+
+            $params = array ('name' => $site->contactname, 'email' => trim($site->contactemail), 'list' => $sendylistid, 'boolean' => 'true');
+            $paramspost = $curl->format_postdata_for_curlcall($params);
+            $request = array('url' => $sendyurl.$resturl, 'CURLOPT_POST' => 1, 'CURLOPT_POSTFIELDS' => $paramspost);
+            $requests[] = $request;
+            $chunkparams[] = $params;
+        }
+
+        // REST CALLS.
+        $results = $curl->multi($requests);
+
+        for ($i=0; $i<count($results);$i++) {
+            if (!in_array($results[$i], $correctresults)) {
+                debugging('Updating sendy @'.$sendyurl.$resturl.' for list '. $sendylistid .' had errors for site id->'. $chunk[$i]->id .' email->'.$chunk[$i]->contactemail.' :'. $results[$i], DEBUG_DEVELOPER);
+            }
+        }
+    }
+}
+
+/**
+ * Query a Sendy server for the status of an email address.
+ * @return string See "Subscription status" at http://sendy.co/api for possible values
+ */
+function get_sendy_status($sendyurl, $sendyapikey, $sendylistid, $email) {
+    global $CFG;
+    require_once($CFG->dirroot.'/local/hub/curl.php');
+
+    $params = array ('api_key' => $sendyapikey, 'list_id' => $sendylistid, 'email' => $email);
+    $query = http_build_query($params);
+
+    $resturl = '/api/subscribers/subscription-status.php';
+
+    $curl = new curly;
+    $result = $curl->post($sendyurl.$resturl, $params);
+
+    return $result;
 }

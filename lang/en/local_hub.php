@@ -45,9 +45,12 @@ $string['bulkoperation'] = 'Select';
 $string['bulkoperationperform'] = 'Perform';
 $string['bulkselectoperation'] = 'With selected courses...';
 $string['bulkvisible'] = 'Make visible';
-$string['cannotregisternotavailablesite'] = 'This hub cannot access your web site.';
+$string['cannotregisterbadport'] = 'The hub cannot access your site at {$a}. The URL of your Moodle instance could not be reached by our servers, please ensure your server is running on port 80 for http, or 443 for https. If you are unable to register your site please email support@moodle.org';
+$string['cannotregisternotavailablesite'] = 'The hub cannot access your site at {$a}. Your Moodle site and the hub need to be able to communicate with each another. If you are unable to register your site please email support@moodle.org';
 $string['cannotregisterprivatehub'] = 'You cannot register your hub. Change the Privacy setting.';
 $string['cannotsetpasswordforpublichub'] = 'Cannot set a password for public hub. Either delete your password, either set the hub as private.';
+$string['checkemailsendystatus'] = 'Check email status in Sendy';
+$string['checksiteconnectivity'] = 'Check site accessible';
 $string['comments'] = 'Comments';
 $string['community'] = 'Community';
 $string['confirmbulkdelete'] = 'Bulk delete confirmation';
@@ -150,6 +153,7 @@ Admin: {$a->contactname} ({$a->contactemail})
 Language: {$a->language}
 
 To manage registered sites, go to: {$a->managesiteurl}';
+$string['emailsendystatus'] = 'The status of \'{$a->email}\' in Sendy is: {$a->status}';
 $string['emailtitleurlalreadyexists'] = 'Another site try to register with {$a->existingsite} url.';
 $string['emailtitlesiteadded'] = '{$a} site has been added to the hub';
 $string['emailtitlesitedeleted'] = '{$a->sitename} has been deleted from {$a->hubname} hub';
@@ -165,7 +169,7 @@ $string['enroldownload_help'] = 'Some courses listed in this directory are being
 
 Others are course templates provided for you to download and use on your own Moodle site.';
 $string['errorbadimageheightwidth'] = 'The image should have a maximum size of {$a->width} X {$a->height}';
-$string['errorlangnotrecognized'] = 'Language code is unknown by Moodle. Please contact {$a}';
+$string['errorlangnotrecognized'] = 'Language code is unknown by Moodle. Please see https://docs.moodle.org/en/langpack for information about suppored languages.';
 $string['errormaxpublication'] = 'Sorry your site has published  more than {$a->maxpublication} courses today. You will be able to publish in: {$a->time}.';
 $string['errornopublication'] = 'The hub server is blocking all new publication.';
 $string['errorregistration'] = 'An error occured during registration, please try again later. ({$a})';
@@ -208,6 +212,8 @@ $string['hub:view'] = 'View courses/sites.';
 $string['hub:viewinfo'] = 'View detailed hub information (contact, stats).';
 $string['hub:viewsmallinfo'] = 'View hub information.';
 $string['image'] = 'Image';
+$string['idontlikesite'] = 'I like this site!';
+$string['ilikesite'] = 'I like this site!';
 $string['information'] = 'Information';
 $string['keepcurrentimage'] = 'Keep current image';
 $string['keepcurrentimage_help'] = 'Keep the current image saved on the disk. Even if you choose an image below, the current image will be kept. If you uncheck this, and do not select an new image, the current image will just be deleted.';
@@ -222,6 +228,7 @@ $string['lastmodified_help'] = 'Display the last modified courses for a given ti
 $string['licence'] = 'License';
 $string['licence_help'] = 'You can search for courses that are licensed in a particular way.';
 $string['logourl'] = 'Logo URL';
+$string['mailinglistnotconfigured'] = 'The mailing list has not been configured in the hub settings';
 $string['managecourses'] = 'Manage courses';
 $string['managesites'] = 'Manage sites';
 $string['markstolen'] = 'Mark as stolen';
@@ -237,10 +244,16 @@ $string['messageprovider:coursehubmessage'] = 'Hub message';
 $string['messagesentsuccess'] = 'Message sent successfully';
 $string['modulenumberaverage'] = 'Average number of course modules ({$a})';
 $string['moodleorg'] = 'Moodle.org';
+$string['moodlesiteslistintro'] = 'Some of the growing community of Moodle users are listed below.<br />
+To add or update your site, just use the "Registration" button on your Moodle admin page.<br />
+<span style="font-size:0.9em;">(Note: we check these sites regularly and <a href="http://docs.moodle.org/en/Usage">remove unreachable or invalid sites</a>)</span>';
+
+$string['moodlesiteslistnumbers'] = 'There are {$a->total} currently active sites that have registered from {$a->countries} countries.<br />
+{$a->private} of these have requested privacy and are not shown in the lists below.';
 $string['moved'] = 'Update registration url for an existing site';
-$string['movedorcopiedmsg'] = 'you tried to register a Moodle 2.X site which had already been registered on a different url.
-If you didn\'t know that (or if you don\'t know the site in the left column),
-then  click  \'Register a new site\'. If you are moving your own already registered site (left column) to new URL (right column) then click "Update registration".';
+$string['movedorcopiedmsg'] = 'You tried to register a Moodle 2.X site which had already been registered on a different url.
+If you didn\'t know that or if you don\'t know the site under Previous Registration,
+then  click  \'Register a new site\'. If you are moving your own already registered site to a new URL then click "Update registration".';
 $string['msgforcourse'] = 'You have a new message about a course on "{$a->hubname}" ({$a->huburl}):
 
 --------------------------------------------------------------------------------------
@@ -333,6 +346,8 @@ $string['recaptcha'] = 'Recaptcha settings';
 $string['recaptchaenabled'] = 'Recaptcha';
 $string['recaptchaenabled_help'] = 'When recaptcha is enabled, all site administrators are required to enter a recaptcha during the registration. If your hub is public, it is recommended to enable it to avoid spambot registration.';
 $string['registeredcourses'] = 'Registered courses';
+$string['registeredmoodlesites'] = 'Registered Moodle sites';
+$string['registeredmoodlesites_moodlenet'] = 'Moodle.net: Registered sites';
 $string['registeredsites'] = 'Registered sites';
 $string['registrationconfirmed'] = 'Registration successfull';
 $string['registrationinfo'] = 'Registration information';
@@ -364,12 +379,19 @@ $string['secretvalue'] = 'Secret: {$a}';
 $string['selecthub'] = 'Select hub';
 $string['sendfollowinginfo'] = 'Send the following information:';
 $string['sendmessage'] = 'Send message';
+$string['sendyapikey'] = 'Sendy API key';
+$string['sendyapikey_help'] = 'The sendy API key to use when querying subscriber status';
+$string['sendylistid'] = 'Sendy list ID';
+$string['sendylistid_help'] = 'The sendy list ID to subscribe site contacts to';
+$string['sendyurl'] = 'Sendy URL';
+$string['sendyurl_help'] = 'The URL of the sendy server for the hub mailing list';
 $string['sendto'] = 'Send to';
 $string['sentto'] = 'Sent to';
 $string['senttohub'] = '{$a} hub administrator';
 $string['senttopublisher'] = 'Course publisher: {$a}';
 $string['seecreatornotes'] = 'See creator notes';
 $string['settings'] = 'Settings';
+$string['settingsinvalid'] = 'The hub settings are incomplete. Go to the hub settings page.';
 $string['settingsupdated'] = 'Settings have been updated.';
 $string['sharemore'] = 'More...';
 $string['sharetofacebook'] = 'Share to Facebook';
@@ -433,6 +455,9 @@ $string['trustedyes'] = 'Yes';
 $string['trustme'] = 'Trust';
 $string['typedownloadable'] = 'Downloadable';
 $string['typeenrollable'] = 'Enrollable';
+$string['uncoolsite'] = 'Uncool site!';
+$string['urlaccessible'] = '\'{$a}\' is accessible from this hub';
+$string['urlnotaccessible'] = '\'{$a}\' is not accessible from this hub';
 $string['unlistedurl'] = 'Unlisted hub URL';
 $string['unprioritise'] = 'Unprioritise';
 $string['unregistrationofprivate'] = 'The hub has been unregistered from the hub directory.';
@@ -454,4 +479,36 @@ $string['wronghubpassword'] = 'Wrong hub password, press continue and try again.
 $string['xmlrpcdisabled'] = 'The XML-RPC extension is not enabled on the server. You can not manage your hub until this extension is enabled.';
 $string['yeswithmoodle'] = 'Yes, with Moodle';
 $string['yeswithoutmoodle'] = 'Yes, without Moodle';
+
+//@todo AMOS CPY commands for local_moodleorg -> local_hub
+$string['aboutstatisticstitle'] = 'Moodle.org: Moodle Statistics';
+$string['aboutstatisticsheading'] = 'Moodle Statistics';
+$string['activeusers24hours'] = 'Registered users accessed in past 24 hours: ';
+$string['activeuserspastmonth'] = 'Registered users accessed in past month:';
+$string['graphusersites'] = 'Moodle users v site comparison';
+$string['graphpopulation'] = 'Moodle population graph';
+$string['graphregistrationmap'] = 'Moodle registration map';
+$string['graphregistrationmapdesc'] = 'Top 10 from registered sites in {$a} countries';
+$string['newregistrations'] = 'New registrations';
+$string['registeredsites'] = 'Institutions are not required to inform anyone when they use Moodle, because Moodle is open source.  However, some Moodle sites have chosen to register with us and we keep a listing of them.';
+$string['registeredsitestitle'] = 'Registered sites';
+$string['registereduserstotal'] = 'Registered users total: ';
+$string['registereduserslastday'] = 'New users in the past 24 hours: ';
+$string['registrationgraphalt'] = 'All Moodle registrations over time';
+$string['registrationgraphdesc'] = 'We perform <a href="http://docs.moodle.org/en/Usage">regular bulk checking of sites</a> to make sure they still exist, so occasionally you may see reductions in the count';
+$string['registrationslast6months'] = 'Registrations in the past 6 months';
+$string['registrationslastmonths'] = 'Registrations in the past {$a} months';
+$string['registrationstotal'] = 'All current registrations';
+$string['statscourses'] = 'Courses';
+$string['statscountries'] = 'Countries';
+$string['statsusers'] = 'Users';
+$string['statsteachers'] = 'Teachers';
+$string['statsenrolments'] = 'Enrolments';
+$string['statsposts'] = 'Forum posts';
+$string['statsresources'] = 'Resources';
+$string['statsquestions'] = 'Quiz questions';
+$string['top10sitesbyusers'] = 'Top 10 sites by users';
+$string['top10sitesbycourses'] = 'Top 10 sites by courses';
+$string['top10countriesbyregistration'] = 'Top 10 countries by registrations';
+$string['versionsused'] = 'Versions used';
 

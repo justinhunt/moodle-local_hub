@@ -455,5 +455,145 @@ function xmldb_local_hub_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2013050614, 'local', 'hub');
     }
 
-    return $result;
+    if ($oldversion < 2014031201) {
+        // Here we're adding link checker fields. These were originally in the registry table on moodle.org and also a copy elsewheres. Now this data is just on 2 server.
+        // (1) the hub here (2) synced to moodle.org for display/stats/etc
+
+        // Define field unreachable to be added to hub_site_directory.
+        $table = new xmldb_table('hub_site_directory');
+        $field = new xmldb_field('unreachable', XMLDB_TYPE_INTEGER, '11', null, XMLDB_NOTNULL, null, '0', 'issuedbadges');
+
+        // Conditionally launch add field unreachable.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('timeunreachable', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'unreachable');
+
+        // Conditionally launch add field timeunreachable.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('score', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'timeunreachable');
+
+        // Conditionally launch add field score.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('errormsg', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, '0', 'score');
+
+        // Conditionally launch add field errormsg.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('timelinkchecked', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'errormsg');
+
+        // Conditionally launch add field timelinkchecked.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('serverstring', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'timelinkchecked');
+
+        // Conditionally launch add field serverstring.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('override', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'serverstring');
+
+        // Conditionally launch add field override.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('fingerprint', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'override');
+
+        // Conditionally launch add field fingerprint.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Hub savepoint reached.
+        upgrade_plugin_savepoint(true, 2014031201, 'local', 'hub');
+    }
+
+    if ($oldversion < 2014031202) {
+
+        // Changing type of field serverstring on table hub_site_directory to text. (some server strings are really long -> avoids failed DB sql)
+        $table = new xmldb_table('hub_site_directory');
+        $field = new xmldb_field('serverstring', XMLDB_TYPE_TEXT, null, null, null, null, null, 'timelinkchecked');
+
+        // Launch change of type for field serverstring.
+        $dbman->change_field_type($table, $field);
+
+        // Hub savepoint reached.
+        upgrade_plugin_savepoint(true, 2014031202, 'local', 'hub');
+    }
+
+    if ($oldversion < 2014041000) {
+
+        // Changing precision of field ip on table hub_site_directory to (45).
+        $table = new xmldb_table('hub_site_directory');
+        $field = new xmldb_field('ip', XMLDB_TYPE_CHAR, '45', null, null, null, null, 'moodlerelease');
+
+        // Launch change of precision for field ip.
+        $dbman->change_field_precision($table, $field);
+
+        // Hub savepoint reached.
+        upgrade_plugin_savepoint(true, 2014041000, 'local', 'hub');
+    }
+
+    if ($oldversion < 2014041700) {
+
+        // Define index idxurl (not unique) to be added to hub_site_directory.
+        $table = new xmldb_table('hub_site_directory');
+        $index = new xmldb_index('idxurl', XMLDB_INDEX_NOTUNIQUE, array('url'));
+
+        // Conditionally launch add index idxurl.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Hub savepoint reached.
+        upgrade_plugin_savepoint(true, 2014041700, 'local', 'hub');
+    }
+
+    if ($oldversion < 2014063000) {
+
+        // Define field cool to be added to hub_site_directory.
+        $table = new xmldb_table('hub_site_directory');
+        $field = new xmldb_field('cool', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'issuedbadges');
+
+        // Conditionally launch add field cool.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('cooldate', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'cool');
+
+        // Conditionally launch add field cooldate.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        // Hub savepoint reached.
+        upgrade_plugin_savepoint(true, 2014063000, 'local', 'hub');
+    }
+
+    if ($oldversion < 2016071400) {
+        // Fix the missing email address in accounts representing registered
+        // sites to prevent the "user not fully set up" error.
+        $users = $DB->get_records('user', ['auth' => 'webservice', 'email' => ''], null, 'id,username');
+
+        foreach ($users as $user) {
+            $DB->set_field('user', 'email', sha1($user->username).'@example.com', ['id' => $user->id]);
+        }
+
+        upgrade_plugin_savepoint(true, 2016071400, 'local', 'hub');
+    }
+
+    return true;
 }
