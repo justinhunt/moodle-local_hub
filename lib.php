@@ -1674,27 +1674,10 @@ class local_hub {
      * @return boolean true if the site is valid
      */
     public function is_remote_site_valid($url) {
-<<<<<<< HEAD
 
-        //Retrieve some of the site header info by curl
-        //Curl is twice faster and more than the get_headers() php function
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL,            $url);
-        curl_setopt($ch, CURLOPT_HEADER,         true);
-        curl_setopt($ch, CURLOPT_NOBODY,         true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT,        15);
-        //without these two lines, CURL may not be able to access SSL sites
-        //not strictly secure, but since just verifying URL, probably ok. JH
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        $r = curl_exec($ch);
-        $curlinfo = curl_getinfo($ch);
-        //Note: if not reach, then $siteheaders contains an array with one empty element
-=======
         global $CFG;
         require_once($CFG->libdir.'/filelib.php');
->>>>>>> 242c4ac7b94ec191f33936ef34cb485765a00117
+
 
         //Check if site is valid
         if ( strpos($url, 'http://localhost') !== false
