@@ -463,9 +463,6 @@ class hub_settings_form extends moodleform {
         $mform->setDefault('rsssecret', $rsssecret);
         $mform->setType('rsssecret', PARAM_RAW);  
 
-<<<<<<< HEAD
-        $this->add_action_buttons('rsssecret', get_string('update'));
-=======
         $mform->addElement('text', 'sendyurl',
                 get_string('sendyurl', 'local_hub'));
         $mform->setType('sendyurl', PARAM_URL);
@@ -491,7 +488,7 @@ class hub_settings_form extends moodleform {
         $mform->setDefault('sendyapikey', $sendyapikey);
 
         $this->add_action_buttons(false, get_string('update'));
->>>>>>> 242c4ac7b94ec191f33936ef34cb485765a00117
+
     }
 
     /**
