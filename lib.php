@@ -2206,7 +2206,8 @@ function update_sendy_list_batch($sites, $chunksize=150) {
     }
 
     if (empty($sendyurl) || empty($sendylistid) || empty($sendyapikey)) {
-        print_error('mailinglistnotconfigured', 'local_hub');
+    	return;
+        //print_error('mailinglistnotconfigured', 'local_hub');
     }
 
     $subscribers = array();
